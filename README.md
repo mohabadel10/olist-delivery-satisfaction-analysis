@@ -49,8 +49,8 @@ README.md
 - [x] Data loaded into MySQL
 - [x] Data exploration
 - [x] Data cleaning
-- [ ] Delivery and satisfaction analysis
-- [ ] Seller and category analysis
+- [x] Delivery and satisfaction analysis
+- [x] Seller and category analysis
 - [ ] Excel validation
 - [ ] Power BI dashboard
 - [ ] Final report with recommendations
