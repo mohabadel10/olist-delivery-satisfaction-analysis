@@ -1,8 +1,13 @@
 -- =====================================================
--- Olist project | Task 1: create schema + fast bulk load
--- BEFORE RUNNING: Find & Replace (Ctrl+H in Workbench)
---   C:/olist/   -->  the folder where your CSVs are
---   (use forward slashes, keep the trailing slash)
+-- Olist project | 01 - Setup and load
+-- Goal: create the database and bulk-load the Kaggle CSV files
+-- Dataset: https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+--
+-- BEFORE RUNNING: replace C:/olist/ with the folder where you saved the CSVs
+-- (use forward slashes and keep the trailing slash).
+-- Requires local_infile enabled on the server and in the Workbench connection
+-- (Edit Connection > Advanced > Others: OPT_LOCAL_INFILE=1).
+-- The geolocation file is not used in this project.
 -- =====================================================
 
 SET GLOBAL local_infile = 1;
@@ -53,7 +58,7 @@ CREATE TABLE order_payments (
   PRIMARY KEY (order_id, payment_sequential)
 );
 
--- review_id is NOT unique in this dataset, so no primary key here
+-- review_id is NOT unique in this dataset, so there is no primary key here
 CREATE TABLE order_reviews (
   review_id               VARCHAR(50),
   order_id                VARCHAR(50),
@@ -92,6 +97,7 @@ CREATE TABLE category_translation (
 );
 
 -- ---------- LOAD DATA ----------
+-- NULLIF turns empty cells into NULL for date and number columns.
 LOAD DATA LOCAL INFILE 'C:/olist/olist_customers_dataset.csv'
 INTO TABLE customers CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
@@ -147,6 +153,8 @@ FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 LINES;
 
 -- ---------- VERIFY ----------
+-- Expected: customers 99,441 | orders 99,441 | order_items 112,650 | order_payments 103,886
+--           order_reviews 99,223 | products 32,951 | sellers 3,095 | category_translation 71
 SELECT 'customers' AS tbl, COUNT(*) AS n FROM customers
 UNION ALL SELECT 'orders', COUNT(*) FROM orders
 UNION ALL SELECT 'order_items', COUNT(*) FROM order_items
