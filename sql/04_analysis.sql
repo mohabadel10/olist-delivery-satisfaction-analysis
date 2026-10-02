@@ -246,3 +246,62 @@ SELECT COUNT(*)                 AS total_rows,
        COUNT(DISTINCT order_id) AS distinct_orders,
        SUM(is_late)             AS late_orders
 FROM powerbi_orders;
+
+-- 11. Late rate by purchase month
+-- Finding: late rate is ~3-7% in most months, with three spikes: Nov 2017 (12.4%),
+-- Feb 2018 (14.1%) and Mar 2018 (19.0%). These 3 months hold 3,158 late orders (~48% of all
+-- 6,531) while containing 20,846 orders (~22% of 96,203).
+-- Nov 2017: average delivery time rose from 11.7 to 15.1 days while the promise stayed
+-- about the same (23.7 vs 23.2 days), and volume peaked (7,288 orders).
+-- Dec 2017: the promise was lengthened to 28.3 days and the late rate fell to 7.5%.
+-- Feb-Mar 2018: slowest deliveries (16.9 and 16.2 days) without higher volume than Jan;
+-- Mar 2018 also had the shortest promise (22.7 days). April 2018 recovers to 4.5%.
+-- Caution: only delivered orders are included, so Jun-Aug 2018 may look better than they were.
+SELECT
+  purchase_month,
+  COUNT(*)                     AS orders,
+  SUM(is_late)                 AS late_orders,
+  ROUND(AVG(is_late) * 100, 1) AS late_pct,
+  ROUND(AVG(delivery_days), 1) AS avg_days,
+  ROUND(AVG(promised_days), 1) AS avg_promised_days
+FROM powerbi_orders
+GROUP BY purchase_month
+ORDER BY purchase_month;
+
+-- 12. Late rate by state: spike months vs. other months (states with 500+ orders)
+-- Spike months = Nov 2017, Feb 2018, Mar 2018 (chosen because they had the highest late
+-- rates, so a gap versus other months is expected by construction).
+-- Finding: every state is worse in the spike months (SP 7.9% vs 3.6%, MG 12.0% vs 2.4%,
+-- RJ 31.2% vs 6.6%), so the spikes were a system-wide shock.
+-- In the other months the Northeast is still higher: PB 9.9%, MA 9.7%, BA 9.6%, PE 8.3%
+-- versus MG 2.4%, PR 2.3%, DF 3.3%, RS 3.5%, SP 3.6%.
+-- AL, SE and PI are not shown (under 500 orders).
+SELECT
+  customer_state,
+  COUNT(*) AS orders,
+  ROUND(AVG(CASE WHEN purchase_month IN ('2017-11','2018-02','2018-03')
+                 THEN is_late END) * 100, 1) AS late_pct_spike_months,
+  ROUND(AVG(CASE WHEN purchase_month NOT IN ('2017-11','2018-02','2018-03')
+                 THEN is_late END) * 100, 1) AS late_pct_other_months
+FROM powerbi_orders
+GROUP BY customer_state
+HAVING orders >= 500
+ORDER BY orders DESC;
+
+-- 13. Share of each state's late orders that fall in the spike months
+-- Finding: overall ~48%. RJ 57.5% (860 of 1,495), MG 59.2%, CE 60.8%, PR 55.8%, RS 54.8%.
+-- BA 37.9%, SP 37.1% and PE 33.3% are below average: their lateness is spread across
+-- all months, which fits a structural (not peak-season) problem.
+SELECT
+  customer_state,
+  SUM(is_late) AS late_orders,
+  SUM(CASE WHEN purchase_month IN ('2017-11','2018-02','2018-03')
+           THEN is_late ELSE 0 END) AS late_in_spike_months,
+  ROUND(
+    SUM(CASE WHEN purchase_month IN ('2017-11','2018-02','2018-03')
+             THEN is_late ELSE 0 END) * 100.0 / SUM(is_late), 1
+  ) AS pct_of_late_in_spike
+FROM powerbi_orders
+GROUP BY customer_state
+ORDER BY late_orders DESC
+LIMIT 10;
