@@ -2,7 +2,7 @@
 
 **SQL (MySQL) · Excel · Power BI**
 
-![Dashboard overview](dashboard/dashboard_overview.png)
+![Dashboard overview](olist_delivery_dashboard.jpg)
 
 ## Business question
 Late deliveries and low review scores may be hurting Olist. **Where exactly is the problem
